@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/time/rate"
 	"io"
-	"io/ioutil"
+
 	"net/http"
 	"sync"
+
+	"golang.org/x/time/rate"
 )
 
 const apiBaseUrl = "https://api.sendpulse.com"
@@ -29,20 +30,15 @@ func (e *SendpulseError) Error() string {
 
 // Client to interact with SendpulseAPI
 type Client struct {
-	client        *http.Client
-	config        *Config
-	token         string
-	tokenLock     *sync.RWMutex
-	rateLimiter   *rate.Limiter
-	Emails        *EmailsService
-	Balance       *BalanceService
-	SMTP          *SmtpService
-	Push          *PushService
-	SMS           *SmsService
-	Viber         *ViberService
-	VkOk          *VkOkService
-	Bots          *BotsService
-	Automation360 *Automation360Service
+	client      *http.Client
+	config      *Config
+	token       string
+	tokenLock   *sync.RWMutex
+	rateLimiter *rate.Limiter
+	SMTP        *SmtpService
+	Push        *PushService
+	SMS         *SmsService
+	Validator   *ValidatorService
 }
 
 // NewClient creates new Client to interract with SendpulseAPI
@@ -57,15 +53,10 @@ func NewClient(client *http.Client, config *Config) *Client {
 		token:     "",
 		tokenLock: new(sync.RWMutex),
 	}
-	cl.Emails = newEmailsService(cl)
-	cl.Balance = newBalanceService(cl)
 	cl.SMTP = newSmtpService(cl)
 	cl.Push = newPushService(cl)
 	cl.SMS = newSmsService(cl)
-	cl.Viber = newViberService(cl)
-	cl.VkOk = newVkOkService(cl)
-	cl.Bots = newBotsService(cl)
-	cl.Automation360 = newAutomation360Service(cl)
+	cl.Validator = newValidatorService(cl)
 	cl.rateLimiter = rate.NewLimiter(rate.Limit(config.Rps), config.Rps)
 	return cl
 }
@@ -158,7 +149,7 @@ func (c *Client) newRequest(ctx context.Context, method string, path string, bod
 		return respData, nil
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &SendpulseError{resp.StatusCode, path, string(respBody), err.Error()}
 	}
@@ -207,7 +198,7 @@ func (c *Client) newFormDataRequest(ctx context.Context, path string, buffer *by
 		return respData, nil
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &SendpulseError{resp.StatusCode, path, string(respBody), err.Error()}
 	}
