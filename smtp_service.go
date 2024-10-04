@@ -38,7 +38,12 @@ type SendEmailParams struct {
 	Attachments   map[string]string `json:"attachments"`
 }
 
-func (service *SmtpService) SendMessage(ctx context.Context, params SendEmailParams) (string, error) {
+type SendEmailResponse struct {
+	Result bool   `json:"result"`
+	ID     string `json:"id"`
+}
+
+func (service *SmtpService) SendMessage(ctx context.Context, params SendEmailParams) (*SendEmailResponse, error) {
 	path := "/smtp/emails"
 
 	type paramsFormat struct {
@@ -51,13 +56,14 @@ func (service *SmtpService) SendMessage(ctx context.Context, params SendEmailPar
 	}
 
 	data := paramsFormat{Email: params}
+	var response SendEmailResponse
 
-	var response struct {
-		Result bool   `json:"result"`
-		ID     string `json:"id"`
-	}
 	_, err := service.client.newRequest(ctx, http.MethodPost, path, data, &response, true)
-	return response.ID, err
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, err
 }
 
 type SmtpMessage struct {

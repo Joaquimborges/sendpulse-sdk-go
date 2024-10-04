@@ -17,17 +17,23 @@ func newValidatorService(cl *Client) *ValidatorService {
 }
 
 // ValidateEmail verifies one email address
-func (service *ValidatorService) ValidateEmail(ctx context.Context, email string) error {
+func (service *ValidatorService) ValidateEmail(ctx context.Context, email string) (bool, error) {
 	path := "/verifier-service/send-single-to-verify/"
+
 	var response struct {
-		Result bool `json:"result"`
+		IsValid bool `json:"result"`
 	}
 	type bodyFormat struct {
 		Email string `json:"email"`
 	}
+
 	body := bodyFormat{Email: email}
 	_, err := service.client.newRequest(ctx, http.MethodPost, path, body, &response, true)
-	return err
+	if err != nil {
+		return false, err
+	}
+
+	return response.IsValid, nil
 }
 
 // EmailValidationResult describes a result of a verification of specific email
